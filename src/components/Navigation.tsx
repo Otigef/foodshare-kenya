@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Heart } from "lucide-react";
+import { Menu, Heart, LogIn, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface NavigationProps {
   currentView: string;
@@ -10,6 +12,28 @@ interface NavigationProps {
 
 const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+    };
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    onViewChange('home');
+  };
 
   const navItems = [
     { id: 'home', label: 'Home' },
@@ -52,8 +76,20 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="outline">Sign In</Button>
-            <Button variant="hero">Get Started</Button>
+            {user ? (
+              <Button variant="ghost" onClick={handleSignOut} className="flex items-center space-x-2">
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => navigate('/auth')} className="flex items-center space-x-2">
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
+                </Button>
+                <Button variant="hero" onClick={() => navigate('/auth')}>Get Started</Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Navigation */}
@@ -93,8 +129,43 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
                 ))}
                 
                 <div className="pt-4 space-y-3">
-                  <Button variant="outline" className="w-full">Sign In</Button>
-                  <Button variant="hero" className="w-full">Get Started</Button>
+                  {user ? (
+                    <Button 
+                      variant="outline" 
+                      className="w-full flex items-center space-x-2"
+                      onClick={() => {
+                        handleSignOut();
+                        setIsOpen(false);
+                      }}
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </Button>
+                  ) : (
+                    <>
+                      <Button 
+                        variant="outline" 
+                        className="w-full flex items-center space-x-2"
+                        onClick={() => {
+                          navigate('/auth');
+                          setIsOpen(false);
+                        }}
+                      >
+                        <LogIn className="w-4 h-4" />
+                        <span>Sign In</span>
+                      </Button>
+                      <Button 
+                        variant="hero" 
+                        className="w-full"
+                        onClick={() => {
+                          navigate('/auth');
+                          setIsOpen(false);
+                        }}
+                      >
+                        Get Started
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </SheetContent>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,11 +7,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock, MapPin, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { Database } from "@/integrations/supabase/types";
 
 const DonationForm = () => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<{
+    foodType: Database['public']['Enums']['food_category'] | '';
+    title: string;
+    quantity: string;
+    description: string;
+    expiryTime: string;
+    pickupLocation: string;
+    contactPhone: string;
+    specialInstructions: string;
+  }>({
     foodType: '',
+    title: '',
     quantity: '',
     description: '',
     expiryTime: '',
@@ -20,11 +36,40 @@ const DonationForm = () => {
     specialInstructions: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    // Check if user is logged in
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        navigate('/auth');
+        return;
+      }
+      setUser(session.user);
+    };
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session?.user) {
+        navigate('/auth');
+      } else {
+        setUser(session.user);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    
     // Simple validation
-    if (!formData.foodType || !formData.quantity || !formData.pickupLocation) {
+    if (!formData.foodType || !formData.title || !formData.quantity || !formData.pickupLocation) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
@@ -33,23 +78,59 @@ const DonationForm = () => {
       return;
     }
 
-    // Here you would typically send data to your backend
-    toast({
-      title: "Donation Posted Successfully! 🎉",
-      description: "Your food donation is now available for pickup. Recipients will be notified.",
-      variant: "default"
-    });
+    setLoading(true);
 
-    // Reset form
-    setFormData({
-      foodType: '',
-      quantity: '',
-      description: '',
-      expiryTime: '',
-      pickupLocation: '',
-      contactPhone: '',
-      specialInstructions: ''
-    });
+    try {
+      const { error } = await supabase
+        .from('food_donations')
+        .insert({
+          donor_id: user.id,
+          food_type: formData.foodType as Database['public']['Enums']['food_category'],
+          title: formData.title,
+          description: formData.description,
+          quantity: formData.quantity,
+          expiry_time: formData.expiryTime || null,
+          pickup_location: formData.pickupLocation,
+          contact_phone: formData.contactPhone,
+          special_instructions: formData.specialInstructions,
+          status: 'available' as Database['public']['Enums']['donation_status']
+        });
+
+      if (error) {
+        toast({
+          title: "Error Posting Donation",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Donation Posted Successfully! 🎉",
+        description: "Your food donation is now available for pickup. Recipients will be notified.",
+        variant: "default"
+      });
+
+      // Reset form
+      setFormData({
+        foodType: '',
+        title: '',
+        quantity: '',
+        description: '',
+        expiryTime: '',
+        pickupLocation: '',
+        contactPhone: '',
+        specialInstructions: ''
+      });
+    } catch (error) {
+      toast({
+        title: "Unexpected Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,12 +147,25 @@ const DonationForm = () => {
 
         <Card className="p-8 shadow-card">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Title */}
+            <div className="space-y-2">
+              <Label htmlFor="title" className="text-foreground font-medium">
+                Food Title *
+              </Label>
+              <Input
+                id="title"
+                placeholder="e.g., Fresh Vegetables, Cooked Rice"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              />
+            </div>
+
             {/* Food Type */}
             <div className="space-y-2">
               <Label htmlFor="foodType" className="text-foreground font-medium">
                 Food Type *
               </Label>
-              <Select onValueChange={(value) => setFormData(prev => ({ ...prev, foodType: value }))}>
+              <Select onValueChange={(value) => setFormData(prev => ({ ...prev, foodType: value as Database['public']['Enums']['food_category'] }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select food category" />
                 </SelectTrigger>
@@ -184,9 +278,9 @@ const DonationForm = () => {
             </div>
 
             {/* Submit Button */}
-            <Button type="submit" variant="hero" size="lg" className="w-full">
+            <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
               <Package className="w-5 h-5 mr-2" />
-              Post Food Donation
+              {loading ? "Posting Donation..." : "Post Food Donation"}
             </Button>
           </form>
         </Card>
