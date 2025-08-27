@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      donation_claims: {
+        Row: {
+          created_at: string
+          donation_id: string
+          id: string
+          message: string | null
+          recipient_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          donation_id: string
+          id?: string
+          message?: string | null
+          recipient_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          donation_id?: string
+          id?: string
+          message?: string | null
+          recipient_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_claims_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: false
+            referencedRelation: "food_donations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_claims_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      food_donations: {
+        Row: {
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          donor_id: string
+          expiry_time: string | null
+          food_type: Database["public"]["Enums"]["food_category"]
+          id: string
+          pickup_location: string
+          quantity: string
+          special_instructions: string | null
+          status: Database["public"]["Enums"]["donation_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          donor_id: string
+          expiry_time?: string | null
+          food_type: Database["public"]["Enums"]["food_category"]
+          id?: string
+          pickup_location: string
+          quantity: string
+          special_instructions?: string | null
+          status?: Database["public"]["Enums"]["donation_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          donor_id?: string
+          expiry_time?: string | null
+          food_type?: Database["public"]["Enums"]["food_category"]
+          id?: string
+          pickup_location?: string
+          quantity?: string
+          special_instructions?: string | null
+          status?: Database["public"]["Enums"]["donation_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_donations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          location: string | null
+          organization_name: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          location?: string | null
+          organization_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          location?: string | null
+          organization_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +159,17 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      donation_status: "available" | "claimed" | "completed" | "expired"
+      food_category:
+        | "fruits"
+        | "vegetables"
+        | "grains"
+        | "dairy"
+        | "meat"
+        | "prepared"
+        | "baked"
+        | "other"
+      user_role: "donor" | "recipient" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +296,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      donation_status: ["available", "claimed", "completed", "expired"],
+      food_category: [
+        "fruits",
+        "vegetables",
+        "grains",
+        "dairy",
+        "meat",
+        "prepared",
+        "baked",
+        "other",
+      ],
+      user_role: ["donor", "recipient", "admin"],
+    },
   },
 } as const
