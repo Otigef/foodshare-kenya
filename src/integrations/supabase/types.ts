@@ -156,7 +156,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_public_profile_info: {
+        Args: { profile_user_id: string }
+        Returns: {
+          full_name: string
+          organization_name: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       donation_status: "available" | "claimed" | "completed" | "expired"
