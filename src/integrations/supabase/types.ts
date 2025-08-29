@@ -156,6 +156,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_donor_contact_for_claim: {
+        Args: { donation_uuid: string }
+        Returns: {
+          contact_phone: string
+          donor_name: string
+          donor_organization: string
+        }[]
+      }
+      get_public_donation_info: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          description: string
+          donor_id: string
+          expiry_time: string
+          food_type: Database["public"]["Enums"]["food_category"]
+          id: string
+          pickup_location: string
+          quantity: string
+          special_instructions: string
+          status: Database["public"]["Enums"]["donation_status"]
+          title: string
+          updated_at: string
+        }[]
+      }
       get_public_profile_info: {
         Args: { profile_user_id: string }
         Returns: {

@@ -4,12 +4,24 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock, MapPin, Phone, Package, Heart } from "lucide-react";
+import { Clock, MapPin, Package, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 
-type Donation = Database['public']['Tables']['food_donations']['Row'] & {
+type Donation = {
+  id: string;
+  donor_id: string;
+  title: string;
+  description: string | null;
+  food_type: Database['public']['Enums']['food_category'];
+  quantity: string;
+  pickup_location: string;
+  expiry_time: string | null;
+  status: Database['public']['Enums']['donation_status'];
+  special_instructions: string | null;
+  created_at: string;
+  updated_at: string;
   donor_profile?: {
     full_name: string;
     organization_name: string | null;
@@ -34,17 +46,8 @@ const BrowseDonations = () => {
 
   const fetchDonations = async () => {
     try {
-      const { data, error } = await supabase
-        .from('food_donations')
-        .select(`
-          *,
-          donor_profile:profiles!food_donations_donor_id_fkey(
-            full_name,
-            organization_name
-          )
-        `)
-        .eq('status', 'available')
-        .order('created_at', { ascending: false });
+      // Use the secure function to get donations without contact info
+      const { data, error } = await supabase.rpc('get_public_donation_info');
 
       if (error) {
         toast({
@@ -55,7 +58,21 @@ const BrowseDonations = () => {
         return;
       }
 
-      setDonations(data || []);
+      // Get donor profiles separately using the public profile function
+      const donationsWithProfiles = await Promise.all(
+        (data || []).map(async (donation) => {
+          const { data: profileData } = await supabase.rpc('get_public_profile_info', {
+            profile_user_id: donation.donor_id
+          });
+          
+          return {
+            ...donation,
+            donor_profile: profileData?.[0] || null
+          };
+        })
+      );
+
+      setDonations(donationsWithProfiles);
     } catch (error) {
       toast({
         title: "Unexpected Error",
@@ -238,13 +255,6 @@ const BrowseDonations = () => {
                 <span className="text-sm text-foreground">Best before: {formatExpiryTime(donation.expiry_time)}</span>
               </div>
 
-              {/* Contact */}
-              {donation.contact_phone && (
-                <div className="flex items-center space-x-2">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{donation.contact_phone}</span>
-                </div>
-              )}
 
               {/* Action Button */}
               <Button 
