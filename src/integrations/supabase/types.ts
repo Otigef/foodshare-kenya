@@ -184,7 +184,6 @@ export type Database = {
       get_public_profile_info: {
         Args: { profile_user_id: string }
         Returns: {
-          full_name: string
           organization_name: string
           role: Database["public"]["Enums"]["user_role"]
           user_id: string

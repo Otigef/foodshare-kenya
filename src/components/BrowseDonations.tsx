@@ -23,8 +23,8 @@ type Donation = {
   created_at: string;
   updated_at: string;
   donor_profile?: {
-    full_name: string;
     organization_name: string | null;
+    role: string;
   };
 };
 
@@ -101,7 +101,7 @@ const BrowseDonations = () => {
         donation.food_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
         donation.pickup_location.toLowerCase().includes(searchTerm.toLowerCase()) ||
         donation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (donation.donor_profile?.full_name && donation.donor_profile.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        
         (donation.donor_profile?.organization_name && donation.donor_profile.organization_name.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
@@ -216,7 +216,7 @@ const BrowseDonations = () => {
                 <div className="space-y-1">
                   <h3 className="font-semibold text-foreground">{donation.title}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {donation.donor_profile?.organization_name || donation.donor_profile?.full_name || "Anonymous Donor"}
+                    {donation.donor_profile?.organization_name || "Anonymous Donor"}
                   </p>
                 </div>
                 <div className="flex flex-col items-end space-y-1">
@@ -260,7 +260,7 @@ const BrowseDonations = () => {
               <Button 
                 variant={isUrgent(donation.expiry_time) ? "hero" : "default"} 
                 className="w-full"
-                onClick={() => handleClaim(donation.id, donation.donor_profile?.organization_name || donation.donor_profile?.full_name || "Anonymous Donor")}
+                onClick={() => handleClaim(donation.id, donation.donor_profile?.organization_name || "Anonymous Donor")}
               >
                 Claim This Donation
               </Button>
