@@ -59,6 +59,39 @@ export type Database = {
           },
         ]
       }
+      food_alerts: {
+        Row: {
+          created_at: string
+          food_type: Database["public"]["Enums"]["food_category"]
+          id: string
+          is_active: boolean
+          location: string | null
+          radius_km: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          food_type: Database["public"]["Enums"]["food_category"]
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          radius_km?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          food_type?: Database["public"]["Enums"]["food_category"]
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          radius_km?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       food_donations: {
         Row: {
           contact_phone: string | null

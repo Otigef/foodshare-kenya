@@ -3,6 +3,7 @@ import Hero from "@/components/Hero";
 import UserRoleSelection from "@/components/UserRoleSelection";
 import DonationForm from "@/components/DonationForm";
 import BrowseDonations from "@/components/BrowseDonations";
+import FoodAlerts from "@/components/FoodAlerts";
 import Navigation from "@/components/Navigation";
 
 const Index = () => {
@@ -31,6 +32,8 @@ const Index = () => {
         return <DonationForm />;
       case 'browse':
         return <BrowseDonations />;
+      case 'alerts':
+        return <FoodAlerts />;
       case 'impact':
         return (
           <div className="py-16 text-center">

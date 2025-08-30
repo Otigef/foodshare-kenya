@@ -39,6 +39,7 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
     { id: 'home', label: 'Home' },
     { id: 'donate', label: 'Donate Food' },
     { id: 'browse', label: 'Find Food' },
+    { id: 'alerts', label: 'Food Alerts' },
     { id: 'impact', label: 'Our Impact' }
   ];
 
