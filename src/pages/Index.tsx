@@ -4,6 +4,7 @@ import UserRoleSelection from "@/components/UserRoleSelection";
 import DonationForm from "@/components/DonationForm";
 import BrowseDonations from "@/components/BrowseDonations";
 import FoodAlerts from "@/components/FoodAlerts";
+import AdminDashboard from "@/components/AdminDashboard";
 import Navigation from "@/components/Navigation";
 
 const Index = () => {
@@ -16,6 +17,8 @@ const Index = () => {
       setCurrentView('donate');
     } else if (role === 'recipient') {
       setCurrentView('browse');
+    } else if (role === 'admin') {
+      setCurrentView('admin');
     }
   };
 
@@ -34,6 +37,8 @@ const Index = () => {
         return <BrowseDonations onNavigateToAlerts={() => setCurrentView('alerts')} />;
       case 'alerts':
         return <FoodAlerts />;
+      case 'admin':
+        return <AdminDashboard />;
       case 'impact':
         return (
           <div className="py-16 text-center">
