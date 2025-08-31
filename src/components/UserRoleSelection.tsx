@@ -1,12 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Store, Heart, Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface UserRoleSelectionProps {
   onRoleSelect: (role: 'donor' | 'recipient' | 'admin') => void;
 }
 
 const UserRoleSelection = ({ onRoleSelect }: UserRoleSelectionProps) => {
+  const navigate = useNavigate();
+
   return (
     <section className="py-16 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -106,7 +109,7 @@ const UserRoleSelection = ({ onRoleSelect }: UserRoleSelectionProps) => {
         <div className="text-center mt-12">
           <p className="text-muted-foreground">
             Already have an account? 
-            <Button variant="link" className="px-2">Sign in here</Button>
+            <Button variant="link" className="px-2" onClick={() => navigate('/auth')}>Sign in here</Button>
           </p>
         </div>
       </div>
