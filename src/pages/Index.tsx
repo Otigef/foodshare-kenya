@@ -31,7 +31,7 @@ const Index = () => {
       case 'donate':
         return <DonationForm />;
       case 'browse':
-        return <BrowseDonations />;
+        return <BrowseDonations onNavigateToAlerts={() => setCurrentView('alerts')} />;
       case 'alerts':
         return <FoodAlerts />;
       case 'impact':

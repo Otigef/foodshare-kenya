@@ -9,6 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 
+interface BrowseDonationsProps {
+  onNavigateToAlerts?: () => void;
+}
+
 type Donation = {
   id: string;
   donor_id: string;
@@ -28,7 +32,7 @@ type Donation = {
   };
 };
 
-const BrowseDonations = () => {
+const BrowseDonations = ({ onNavigateToAlerts }: BrowseDonationsProps) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -292,7 +296,11 @@ const BrowseDonations = () => {
             <p className="text-muted-foreground mb-6">
               Set up alerts for specific food types in your area.
             </p>
-            <Button variant="outline" size="lg">
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={onNavigateToAlerts}
+            >
               Create Food Alert
             </Button>
           </Card>
