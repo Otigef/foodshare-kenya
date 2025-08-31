@@ -1,9 +1,28 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Users, Leaf } from "lucide-react";
+import { useState, useEffect } from "react";
 import heroImage from "@/assets/hero-foodshare.jpg";
+import mealSharing1 from "@/assets/meal-sharing-1.jpg";
+import mealSharing2 from "@/assets/meal-sharing-2.jpg";
 
 const Hero = () => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const images = [heroImage, mealSharing1, mealSharing2];
+  const imageDescriptions = [
+    "Community sharing food in Kenya",
+    "Kenyan family sharing a meal together",
+    "Children enjoying shared meals outdoors"
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, 1000); // Change image every 1 second
+
+    return () => clearInterval(interval);
+  }, [images.length]);
+
   return (
     <section className="relative min-h-screen bg-gradient-to-br from-background via-muted to-background">
       {/* Hero Content */}
@@ -48,14 +67,21 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Hero Image */}
+          {/* Hero Image with Animation */}
           <div className="relative">
             <div className="relative overflow-hidden rounded-2xl shadow-card">
-              <img 
-                src={heroImage} 
-                alt="Community sharing food in Kenya"
-                className="w-full h-[500px] object-cover"
-              />
+              <div className="relative w-full h-[500px]">
+                {images.map((image, index) => (
+                  <img
+                    key={index}
+                    src={image}
+                    alt={imageDescriptions[index]}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+                      index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                ))}
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent" />
             </div>
             
