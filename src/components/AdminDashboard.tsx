@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Activity, BarChart3, Shield, AlertTriangle, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import UserManagement from "./admin/UserManagement";
+import DonationsManagement from "./admin/DonationsManagement";
+import ClaimsManagement from "./admin/ClaimsManagement";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -123,100 +127,98 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        {/* Management Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Users className="h-5 w-5 mr-2" />
-                User Management
-              </CardTitle>
-              <CardDescription>
-                Manage user accounts and roles
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full justify-start">
-                View All Users
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                Manage User Roles
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                Review User Reports
-              </Button>
-            </CardContent>
-          </Card>
+        {/* Management Tabs */}
+        <Tabs defaultValue="users" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="users" className="flex items-center">
+              <Users className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="donations" className="flex items-center">
+              <Activity className="h-4 w-4 mr-2" />
+              Donations
+            </TabsTrigger>
+            <TabsTrigger value="claims" className="flex items-center">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Claims
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Activity className="h-5 w-5 mr-2" />
-                Platform Activity
-              </CardTitle>
-              <CardDescription>
-                Monitor donations and claims
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full justify-start">
-                View Recent Donations
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                Review Pending Claims
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                Monitor Food Safety
-              </Button>
-            </CardContent>
-          </Card>
+          <TabsContent value="users" className="mt-6">
+            <UserManagement />
+          </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2" />
-                Impact Analytics
-              </CardTitle>
-              <CardDescription>
-                Track community impact and metrics
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full justify-start">
-                Food Waste Reduced
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                People Fed
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                Environmental Impact
-              </Button>
-            </CardContent>
-          </Card>
+          <TabsContent value="donations" className="mt-6">
+            <DonationsManagement />
+          </TabsContent>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Shield className="h-5 w-5 mr-2" />
-                Safety & Security
-              </CardTitle>
-              <CardDescription>
-                Ensure safe food sharing practices
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="outline" className="w-full justify-start">
-                Safety Guidelines
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                Report Management
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                Platform Moderation
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="claims" className="mt-6">
+            <ClaimsManagement />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <BarChart3 className="h-5 w-5 mr-2" />
+                  Impact Analytics
+                </CardTitle>
+                <CardDescription>
+                  Track community impact and platform metrics
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Food Waste Reduced</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold text-primary">
+                        {stats.activeDonations * 2.5}kg
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Estimated food saved from waste
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">People Fed</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold text-primary">
+                        {stats.totalClaims * 3}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Estimated meals provided
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">CO₂ Saved</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold text-primary">
+                        {Math.round(stats.activeDonations * 2.5 * 2.3)}kg
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Carbon footprint reduction
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
