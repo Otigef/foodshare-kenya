@@ -114,6 +114,27 @@ const BrowseDonations = ({ onNavigateToAlerts }: BrowseDonationsProps) => {
         return;
       }
 
+      // Check if user has made any claims in the last 12 hours
+      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+      const { data: recentClaims } = await supabase
+        .from('donation_claims')
+        .select('id, created_at')
+        .eq('recipient_id', session.user.id)
+        .gte('created_at', twelveHoursAgo);
+
+      if (recentClaims && recentClaims.length > 0) {
+        const lastClaimTime = new Date(recentClaims[0].created_at);
+        const timeRemaining = 12 * 60 * 60 * 1000 - (Date.now() - lastClaimTime.getTime());
+        const hoursRemaining = Math.ceil(timeRemaining / (60 * 60 * 1000));
+        
+        toast({
+          title: "Claim Limit Reached",
+          description: `You can only make one claim every 12 hours. Please wait ${hoursRemaining} more hour(s).`,
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Check if user already has a claim for this donation
       const { data: existingClaim } = await supabase
         .from('donation_claims')
@@ -168,8 +189,8 @@ const BrowseDonations = ({ onNavigateToAlerts }: BrowseDonationsProps) => {
 
       const recipientName = profile?.organization_name || profile?.full_name || 'Anonymous Recipient';
 
-      // Send WhatsApp notification to donor
-      const { error: notificationError } = await supabase.functions.invoke('notify-donor', {
+      // Send email notification to donor
+      const { error: notificationError } = await supabase.functions.invoke('notify-donor-email', {
         body: {
           donationId,
           recipientName,
@@ -178,13 +199,13 @@ const BrowseDonations = ({ onNavigateToAlerts }: BrowseDonationsProps) => {
       });
 
       if (notificationError) {
-        console.error('Notification error:', notificationError);
+        console.error('Email notification error:', notificationError);
         // Don't fail the claim if notification fails
       }
 
       toast({
-        title: "Claim Request Sent! 📱",
-        description: `Your request to claim food from ${donorName} has been sent. The donor will be notified via WhatsApp.`,
+        title: "Claim Request Sent! 📧",
+        description: `Your request to claim food from ${donorName} has been sent. The donor will be notified via email.`,
         variant: "default"
       });
 
