@@ -50,8 +50,15 @@ const BrowseDonations = ({ onNavigateToAlerts }: BrowseDonationsProps) => {
 
   const fetchDonations = async () => {
     try {
-      // Use the secure function to get donations without contact info
-      const { data, error } = await supabase.rpc('get_public_donation_info');
+      // Get all available donations (only those without claims)
+      const { data, error } = await supabase
+        .from('food_donations')
+        .select(`
+          *,
+          donation_claims(id)
+        `)
+        .eq('status', 'available')
+        .order('created_at', { ascending: false });
 
       if (error) {
         toast({
@@ -62,9 +69,14 @@ const BrowseDonations = ({ onNavigateToAlerts }: BrowseDonationsProps) => {
         return;
       }
 
-      // Get donor profiles separately using the public profile function
+      // Filter out donations that already have claims
+      const availableDonations = (data || []).filter(donation => 
+        !donation.donation_claims || donation.donation_claims.length === 0
+      );
+
+      // Get donor profiles for available donations
       const donationsWithProfiles = await Promise.all(
-        (data || []).map(async (donation) => {
+        availableDonations.map(async (donation) => {
           const { data: profileData } = await supabase.rpc('get_public_profile_info', {
             profile_user_id: donation.donor_id
           });
@@ -89,12 +101,104 @@ const BrowseDonations = ({ onNavigateToAlerts }: BrowseDonationsProps) => {
   };
 
   const handleClaim = async (donationId: string, donorName: string) => {
-    // For now, just show a toast. Later we can implement actual claiming
-    toast({
-      title: "Claim Request Sent! 📱",
-      description: `Your request to claim food from ${donorName} has been sent. They will contact you soon.`,
-      variant: "default"
-    });
+    try {
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to claim donations.",
+          variant: "destructive"
+        });
+        window.location.href = '/auth';
+        return;
+      }
+
+      // Check if user already has a claim for this donation
+      const { data: existingClaim } = await supabase
+        .from('donation_claims')
+        .select('id')
+        .eq('donation_id', donationId)
+        .eq('recipient_id', session.user.id);
+
+      if (existingClaim && existingClaim.length > 0) {
+        toast({
+          title: "Already Claimed",
+          description: "You have already claimed this donation.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if donation already has any claims
+      const { data: allClaims } = await supabase
+        .from('donation_claims')
+        .select('id')
+        .eq('donation_id', donationId);
+
+      if (allClaims && allClaims.length > 0) {
+        toast({
+          title: "Already Claimed",
+          description: "This donation has already been claimed by someone else.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create the claim
+      const { error: claimError } = await supabase
+        .from('donation_claims')
+        .insert({
+          donation_id: donationId,
+          recipient_id: session.user.id,
+          status: 'pending',
+          message: 'I would like to claim this food donation.'
+        });
+
+      if (claimError) {
+        throw claimError;
+      }
+
+      // Get recipient name for WhatsApp notification
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, organization_name')
+        .eq('user_id', session.user.id)
+        .single();
+
+      const recipientName = profile?.organization_name || profile?.full_name || 'Anonymous Recipient';
+
+      // Send WhatsApp notification to donor
+      const { error: notificationError } = await supabase.functions.invoke('notify-donor', {
+        body: {
+          donationId,
+          recipientName,
+          message: 'I would like to claim this food donation.'
+        }
+      });
+
+      if (notificationError) {
+        console.error('Notification error:', notificationError);
+        // Don't fail the claim if notification fails
+      }
+
+      toast({
+        title: "Claim Request Sent! 📱",
+        description: `Your request to claim food from ${donorName} has been sent. The donor will be notified via WhatsApp.`,
+        variant: "default"
+      });
+
+      // Refresh donations to reflect the change
+      fetchDonations();
+
+    } catch (error) {
+      console.error('Error claiming donation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to claim donation. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleFilter = () => {
