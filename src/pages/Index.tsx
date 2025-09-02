@@ -5,6 +5,7 @@ import DonationForm from "@/components/DonationForm";
 import BrowseDonations from "@/components/BrowseDonations";
 import FoodAlerts from "@/components/FoodAlerts";
 import AdminDashboard from "@/components/AdminDashboard";
+import ImpactDashboard from "@/components/ImpactDashboard";
 import Navigation from "@/components/Navigation";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -63,12 +64,7 @@ const Index = () => {
         }
         return <AdminDashboard />;
       case 'impact':
-        return (
-          <div className="py-16 text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-4">Impact Dashboard</h2>
-            <p className="text-muted-foreground">Coming soon - Track the community impact of food sharing</p>
-          </div>
-        );
+        return <ImpactDashboard />;
       default:
         return (
           <>
