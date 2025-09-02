@@ -214,6 +214,23 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_public_donations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          description: string
+          donor_id: string
+          expiry_time: string
+          food_type: Database["public"]["Enums"]["food_category"]
+          id: string
+          pickup_location: string
+          quantity: string
+          special_instructions: string
+          status: Database["public"]["Enums"]["donation_status"]
+          title: string
+          updated_at: string
+        }[]
+      }
       get_public_profile_info: {
         Args: { profile_user_id: string }
         Returns: {

@@ -50,29 +50,32 @@ const BrowseDonations = ({ onNavigateToAlerts }: BrowseDonationsProps) => {
 
   const fetchDonations = async () => {
     try {
-      // Get all available donations (only those without claims)
-      const { data, error } = await supabase
-        .from('food_donations')
-        .select(`
-          *,
-          donation_claims(id)
-        `)
-        .eq('status', 'available')
-        .order('created_at', { ascending: false });
+      // Use the secure function to get public donations without contact info
+      const { data: donationsData, error: donationsError } = await supabase
+        .rpc('get_public_donations');
 
-      if (error) {
+      if (donationsError) {
         toast({
           title: "Error Loading Donations",
-          description: error.message,
+          description: donationsError.message,
           variant: "destructive"
         });
         return;
       }
 
-      // Filter out donations that already have claims
-      const availableDonations = (data || []).filter(donation => 
-        !donation.donation_claims || donation.donation_claims.length === 0
-      );
+      // Check for existing claims for each donation
+      const availableDonations = [];
+      for (const donation of donationsData || []) {
+        const { data: claims } = await supabase
+          .from('donation_claims')
+          .select('id')
+          .eq('donation_id', donation.id);
+        
+        // Only include donations without any claims
+        if (!claims || claims.length === 0) {
+          availableDonations.push(donation);
+        }
+      }
 
       // Get donor profiles for available donations
       const donationsWithProfiles = await Promise.all(
