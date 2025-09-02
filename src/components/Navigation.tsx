@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Heart, LogIn, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavigationProps {
   currentView: string;
@@ -12,36 +13,32 @@ interface NavigationProps {
 
 const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user, profile, isAdmin } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
-    };
-
-    checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     onViewChange('home');
   };
 
-  const navItems = [
-    { id: 'home', label: 'Home' },
-    { id: 'donate', label: 'Donate Food' },
-    { id: 'browse', label: 'Find Food' },
-    { id: 'alerts', label: 'Food Alerts' },
-    { id: 'impact', label: 'Our Impact' }
-  ];
+  const getNavItems = () => {
+    const baseItems = [
+      { id: 'home', label: 'Home' },
+      { id: 'donate', label: 'Donate Food' },
+      { id: 'browse', label: 'Find Food' },
+      { id: 'alerts', label: 'Food Alerts' },
+      { id: 'impact', label: 'Our Impact' }
+    ];
+    
+    // Only show admin section to admin users
+    if (isAdmin) {
+      baseItems.push({ id: 'admin', label: 'Admin' });
+    }
+    
+    return baseItems;
+  };
+
+  const navItems = getNavItems();
 
   return (
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Claim {
   id: string;
+  donation_id: string;
   status: string;
   message: string;
   created_at: string;
@@ -70,6 +71,25 @@ const ClaimsManagement = () => {
       setClaims(claims.map(claim => 
         claim.id === claimId ? { ...claim, status: newStatus } : claim
       ));
+
+      // Send email notification when claim is approved
+      if (newStatus === 'approved') {
+        try {
+          const claim = claims.find(c => c.id === claimId);
+          if (claim) {
+            await supabase.functions.invoke('notify-donor-email', {
+              body: {
+                donationId: claim.donation_id,
+                recipientName: claim.profiles?.full_name || 'Unknown',
+                message: claim.message
+              }
+            });
+          }
+        } catch (emailError) {
+          console.error('Error sending email notification:', emailError);
+          // Don't fail the status update if email fails
+        }
+      }
 
       toast({
         title: "Success",

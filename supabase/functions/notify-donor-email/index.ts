@@ -29,16 +29,13 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get donation details including donor email
+    // Get donation details including donor information
     const { data: donation, error: donationError } = await supabase
       .from('food_donations')
       .select(`
         title,
         pickup_location,
-        profiles!food_donations_donor_id_fkey (
-          full_name,
-          user_id
-        )
+        donor_id
       `)
       .eq('id', donationId)
       .single();
@@ -49,7 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Get donor's email from auth.users (we need to use auth admin to access this)
-    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(donation.profiles.user_id);
+    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(donation.donor_id);
 
     if (userError || !user?.email) {
       console.error('Error fetching donor email:', userError);
