@@ -2,11 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Users, Leaf } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import heroImage from "@/assets/hero-foodshare.jpg";
 import mealSharing1 from "@/assets/meal-sharing-1.jpg";
 import mealSharing2 from "@/assets/meal-sharing-2.jpg";
 
-const Hero = () => {
+interface HeroProps {
+  onNavigate?: (view: string) => void;
+}
+
+const Hero = ({ onNavigate }: HeroProps) => {
+  const { user } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = [heroImage, mealSharing1, mealSharing2];
   const imageDescriptions = [
@@ -46,7 +52,13 @@ const Hero = () => {
                 variant="hero" 
                 size="lg" 
                 className="text-lg px-8 py-6"
-                onClick={() => window.location.href = '/auth'}
+                onClick={() => {
+                  if (user && onNavigate) {
+                    onNavigate('donate');
+                  } else {
+                    window.location.href = '/auth';
+                  }
+                }}
               >
                 Start Sharing Food
               </Button>
@@ -54,7 +66,13 @@ const Hero = () => {
                 variant="outline" 
                 size="lg" 
                 className="text-lg px-8 py-6"
-                onClick={() => window.location.href = '/auth'}
+                onClick={() => {
+                  if (user && onNavigate) {
+                    onNavigate('browse');
+                  } else {
+                    window.location.href = '/auth';
+                  }
+                }}
               >
                 Find Food Nearby
               </Button>

@@ -42,7 +42,7 @@ const Index = () => {
       case 'home':
         return (
           <>
-            <Hero />
+            <Hero onNavigate={setCurrentView} />
             <UserRoleSelection onRoleSelect={handleRoleSelect} />
           </>
         );
@@ -68,7 +68,7 @@ const Index = () => {
       default:
         return (
           <>
-            <Hero />
+            <Hero onNavigate={setCurrentView} />
             <UserRoleSelection onRoleSelect={handleRoleSelect} />
           </>
         );
