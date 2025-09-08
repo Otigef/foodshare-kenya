@@ -67,14 +67,24 @@ const DonationsManagement = () => {
 
       if (error) throw error;
 
-      setDonations(donations.map(donation => 
-        donation.id === donationId ? { ...donation, status: newStatus } : donation
-      ));
-
-      toast({
-        title: "Success",
-        description: "Donation status updated successfully",
-      });
+      // If marking as expired, the donation will be automatically deleted by the database trigger
+      // So we remove it from the local state instead of updating it
+      if (newStatus === 'expired') {
+        setDonations(donations.filter(donation => donation.id !== donationId));
+        toast({
+          title: "Success",
+          description: "Expired donation has been removed from the system",
+        });
+      } else {
+        // For other status changes, update the local state normally
+        setDonations(donations.map(donation => 
+          donation.id === donationId ? { ...donation, status: newStatus } : donation
+        ));
+        toast({
+          title: "Success",
+          description: "Donation status updated successfully",
+        });
+      }
     } catch (error) {
       console.error('Error updating donation status:', error);
       toast({
