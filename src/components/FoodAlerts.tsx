@@ -10,6 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Bell, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { alertFormSchema } from "@/lib/validation";
+import { showErrorToast, showSuccessToast, withErrorHandling } from "@/lib/errorHandling";
 
 type FoodAlert = Database['public']['Tables']['food_alerts']['Row'];
 type FoodCategory = Database['public']['Enums']['food_category'];
@@ -66,16 +68,18 @@ const FoodAlerts = () => {
   };
 
   const createAlert = async () => {
-    if (!newAlert.food_type) {
-      toast({
-        title: "Error",
-        description: "Please select a food type",
-        variant: "destructive",
+    // Validate form data
+    const validationResult = alertFormSchema.safeParse(newAlert);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      showErrorToast({
+        code: 'VALIDATION_ERROR',
+        message: firstError.message
       });
       return;
     }
 
-    try {
+    const result = await withErrorHandling(async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
@@ -83,29 +87,21 @@ const FoodAlerts = () => {
         .from('food_alerts')
         .insert({
           user_id: user.id,
-          food_type: newAlert.food_type,
-          location: newAlert.location || null,
-          radius_km: newAlert.radius_km
+          food_type: validationResult.data.food_type,
+          location: validationResult.data.location || null,
+          radius_km: validationResult.data.radius_km
         });
 
       if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Food alert created successfully",
-      });
+      showSuccessToast("Success", "Food alert created successfully");
 
       setNewAlert({ food_type: '', location: '', radius_km: 10 });
       setShowForm(false);
       fetchAlerts();
-    } catch (error) {
-      console.error('Error creating alert:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create alert",
-        variant: "destructive",
-      });
-    }
+
+      return true;
+    }, 'creating alert');
   };
 
   const toggleAlert = async (id: string, is_active: boolean) => {

@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Database } from "@/integrations/supabase/types";
+import { donationFormSchema, type DonationFormData } from "@/lib/validation";
+import { showErrorToast, showSuccessToast, withErrorHandling } from "@/lib/errorHandling";
 
 const DonationForm = () => {
   const { toast } = useToast();
@@ -68,11 +70,13 @@ const DonationForm = () => {
       return;
     }
     
-    // Simple validation
-    if (!formData.foodType || !formData.title || !formData.quantity || !formData.pickupLocation) {
+    // Validate form data using schema
+    const validationResult = donationFormSchema.safeParse(formData);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields",
+        title: "Invalid Input",
+        description: firstError.message,
         variant: "destructive"
       });
       return;
@@ -80,36 +84,28 @@ const DonationForm = () => {
 
     setLoading(true);
 
-    try {
+    const result = await withErrorHandling(async () => {
       const { error } = await supabase
         .from('food_donations')
         .insert({
           donor_id: user.id,
-          food_type: formData.foodType as Database['public']['Enums']['food_category'],
-          title: formData.title,
-          description: formData.description,
-          quantity: formData.quantity,
-          expiry_time: formData.expiryTime || null,
-          pickup_location: formData.pickupLocation,
-          contact_phone: formData.contactPhone,
-          special_instructions: formData.specialInstructions,
+          food_type: validationResult.data.foodType as Database['public']['Enums']['food_category'],
+          title: validationResult.data.title,
+          description: validationResult.data.description,
+          quantity: validationResult.data.quantity,
+          expiry_time: validationResult.data.expiryTime || null,
+          pickup_location: validationResult.data.pickupLocation,
+          contact_phone: validationResult.data.contactPhone,
+          special_instructions: validationResult.data.specialInstructions,
           status: 'available' as Database['public']['Enums']['donation_status']
         });
 
-      if (error) {
-        toast({
-          title: "Error Posting Donation",
-          description: error.message,
-          variant: "destructive"
-        });
-        return;
-      }
+      if (error) throw error;
 
-      toast({
-        title: "Donation Posted Successfully! 🎉",
-        description: "Your food donation is now available for pickup. Recipients will be notified.",
-        variant: "default"
-      });
+      showSuccessToast(
+        "Donation Posted Successfully! 🎉",
+        "Your food donation is now available for pickup. Recipients will be notified."
+      );
 
       // Reset form
       setFormData({
@@ -122,15 +118,11 @@ const DonationForm = () => {
         contactPhone: '',
         specialInstructions: ''
       });
-    } catch (error) {
-      toast({
-        title: "Unexpected Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+
+      return true;
+    }, 'posting donation');
+
+    setLoading(false);
   };
 
   return (
