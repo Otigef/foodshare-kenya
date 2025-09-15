@@ -239,6 +239,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_public_profile_info_secure: {
+        Args: { profile_user_id: string }
+        Returns: {
+          organization_name: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       donation_status: "available" | "claimed" | "completed" | "expired"
