@@ -51,12 +51,28 @@ const UserManagement = () => {
 
   const updateUserRole = async (userId: string, newRole: 'donor' | 'recipient' | 'admin') => {
     try {
-      const { error } = await supabase
+      // First, delete existing role from user_roles
+      const { error: deleteError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new role into user_roles table
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole });
+
+      if (insertError) throw insertError;
+
+      // Update profile table for backward compatibility
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ role: newRole })
         .eq('user_id', userId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       setUsers(users.map(user => 
         user.user_id === userId ? { ...user, role: newRole } : user

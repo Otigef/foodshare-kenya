@@ -19,11 +19,53 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('Missing authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Verify the user is authenticated
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      console.error('Unauthorized access attempt');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { donationId, recipientName, message }: NotificationRequest = await req.json();
 
     console.log('Processing WhatsApp notification for donation:', donationId);
 
-    // Initialize Supabase client
+    // Verify user owns this claim
+    const { data: claim, error: claimError } = await supabaseClient
+      .from('donation_claims')
+      .select('id')
+      .eq('donation_id', donationId)
+      .eq('recipient_id', user.id)
+      .single();
+
+    if (claimError || !claim) {
+      console.error('Unauthorized claim access attempt');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized access to donation' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client with service role for fetching donation
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -42,7 +84,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (donationError || !donation) {
-      console.error('Error fetching donation:', donationError);
+      console.error('Error fetching donation - donation not found');
       throw new Error('Donation not found');
     }
 
@@ -89,7 +131,7 @@ _FoodShare Kenya Platform_`;
       formattedPhone = '254' + formattedPhone;
     }
 
-    console.log('Sending WhatsApp message to:', formattedPhone);
+    console.log('Sending WhatsApp notification');
 
     // Send WhatsApp message (using WhatsApp Business API)
     const whatsappResponse = await fetch(`https://graph.facebook.com/v17.0/YOUR_PHONE_NUMBER_ID/messages`, {
@@ -111,11 +153,11 @@ _FoodShare Kenya Platform_`;
     const whatsappResult = await whatsappResponse.json();
     
     if (!whatsappResponse.ok) {
-      console.error('WhatsApp API error:', whatsappResult);
+      console.error('WhatsApp API error response received');
       throw new Error('Failed to send WhatsApp notification');
     }
 
-    console.log('WhatsApp notification sent successfully:', whatsappResult);
+    console.log('WhatsApp notification sent successfully');
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -127,7 +169,7 @@ _FoodShare Kenya Platform_`;
     });
 
   } catch (error) {
-    console.error('Error in notify-donor function:', error);
+    console.error('Error in notify-donor function:', error.message);
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Failed to send notification',

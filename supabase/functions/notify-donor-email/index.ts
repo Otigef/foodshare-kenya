@@ -20,11 +20,53 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('Missing authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Verify the user is authenticated
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      console.error('Unauthorized access attempt');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { donationId, recipientName, message }: NotificationRequest = await req.json();
     
     console.log('Processing email notification for donation:', donationId);
 
-    // Initialize Supabase client
+    // Verify user owns this claim
+    const { data: claim, error: claimError } = await supabaseClient
+      .from('donation_claims')
+      .select('id')
+      .eq('donation_id', donationId)
+      .eq('recipient_id', user.id)
+      .single();
+
+    if (claimError || !claim) {
+      console.error('Unauthorized claim access attempt');
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized access to donation' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client with service role
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -41,19 +83,19 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (donationError || !donation) {
-      console.error('Error fetching donation:', donationError);
+      console.error('Error fetching donation - donation not found');
       throw new Error('Donation not found');
     }
 
     // Get donor's email from auth.users (we need to use auth admin to access this)
-    const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(donation.donor_id);
+    const { data: { user: donorUser }, error: userError } = await supabase.auth.admin.getUserById(donation.donor_id);
 
-    if (userError || !user?.email) {
-      console.error('Error fetching donor email:', userError);
+    if (userError || !donorUser?.email) {
+      console.error('Error fetching donor email - user not found');
       throw new Error('Donor email not found');
     }
 
-    console.log('Sending email to:', user.email);
+    console.log('Sending email notification');
 
     // Initialize Resend
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -87,17 +129,17 @@ const handler = async (req: Request): Promise<Response> => {
     // Send email
     const emailResponse = await resend.emails.send({
       from: 'FoodShare <noreply@resend.dev>',
-      to: [user.email],
+      to: [donorUser.email],
       subject: emailSubject,
       html: emailHtml,
     });
 
     if (emailResponse.error) {
-      console.error('Email API error:', emailResponse.error);
+      console.error('Email API error');
       throw new Error('Failed to send email notification');
     }
 
-    console.log('Email sent successfully:', emailResponse.data?.id);
+    console.log('Email sent successfully');
 
     return new Response(
       JSON.stringify({ 
@@ -111,7 +153,7 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error) {
-    console.error('Error in notify-donor-email function:', error);
+    console.error('Error in notify-donor-email function:', error.message);
     return new Response(
       JSON.stringify({ 
         error: error.message,

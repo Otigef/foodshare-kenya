@@ -9,8 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, Building } from "lucide-react";
+import { signInSchema, signUpSchema } from "@/lib/authValidation";
+import { z } from 'zod';
 
-type UserRole = 'donor' | 'recipient' | 'admin';
+type UserRole = 'donor' | 'recipient';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -61,9 +63,12 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate input
+      const validatedData = signInSchema.parse(signInData);
+
       const { error } = await supabase.auth.signInWithPassword({
-        email: signInData.email,
-        password: signInData.password,
+        email: validatedData.email,
+        password: validatedData.password,
       });
 
       if (error) {
@@ -79,11 +84,19 @@ const Auth = () => {
         });
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -94,15 +107,18 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate input
+      const validatedData = signUpSchema.parse(signUpData);
+
       const { error } = await supabase.auth.signUp({
-        email: signUpData.email,
-        password: signUpData.password,
+        email: validatedData.email,
+        password: validatedData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: signUpData.fullName,
-            role: signUpData.role,
-            organization_name: signUpData.organizationName
+            full_name: validatedData.fullName,
+            role: validatedData.role,
+            organization_name: validatedData.organizationName || null
           }
         }
       });
@@ -120,11 +136,19 @@ const Auth = () => {
         });
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Validation Error",
+          description: error.errors[0].message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
