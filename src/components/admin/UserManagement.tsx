@@ -51,29 +51,25 @@ const UserManagement = () => {
 
   const updateUserRole = async (userId: string, newRole: 'donor' | 'recipient' | 'admin') => {
     try {
-      // First, delete existing role from user_roles
-      const { error: deleteError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+      // Call secure server-side RPC function with validation
+      const { data, error } = await supabase.rpc('admin_update_user_role', {
+        target_user_id: userId,
+        new_role: newRole
+      });
 
-      if (deleteError) throw deleteError;
+      if (error) {
+        // Handle specific error messages
+        if (error.message.includes('Unauthorized')) {
+          throw new Error('Admin access required');
+        } else if (error.message.includes('Cannot remove your own admin privileges')) {
+          throw new Error('You cannot change your own admin role');
+        } else if (error.message.includes('User not found')) {
+          throw new Error('User not found');
+        }
+        throw error;
+      }
 
-      // Insert new role into user_roles table
-      const { error: insertError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
-
-      if (insertError) throw insertError;
-
-      // Update profile table for backward compatibility
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('user_id', userId);
-
-      if (updateError) throw updateError;
-
+      // Update local state
       setUsers(users.map(user => 
         user.user_id === userId ? { ...user, role: newRole } : user
       ));
@@ -86,7 +82,7 @@ const UserManagement = () => {
       console.error('Error updating user role:', error);
       toast({
         title: "Error",
-        description: "Failed to update user role",
+        description: error instanceof Error ? error.message : "Failed to update user role",
         variant: "destructive",
       });
     }
