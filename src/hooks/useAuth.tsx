@@ -37,19 +37,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile using setTimeout to prevent deadlock
+          // Fetch user profile and role using setTimeout to prevent deadlock
           setTimeout(async () => {
             try {
-              const { data: profileData, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('user_id', session.user.id)
-                .single();
+              const [profileResult, roleResult] = await Promise.all([
+                supabase
+                  .from('profiles')
+                  .select('*')
+                  .eq('user_id', session.user.id)
+                  .single(),
+                supabase
+                  .from('user_roles')
+                  .select('role')
+                  .eq('user_id', session.user.id)
+                  .single()
+              ]);
 
-              if (error) {
+              if (profileResult.error || !profileResult.data) {
                 setProfile(null);
               } else {
-                setProfile(profileData);
+                // Merge profile data with role from user_roles table
+                const role = roleResult.data?.role || 'donor';
+                setProfile({
+                  ...profileResult.data,
+                  role: role as 'donor' | 'recipient' | 'admin'
+                });
               }
             } catch (error) {
               setProfile(null);
@@ -70,18 +82,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Fetch user profile
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single()
-          .then(({ data: profileData, error }) => {
-            if (!error) {
-              setProfile(profileData);
-            }
-            setLoading(false);
-          });
+        // Fetch user profile and role
+        Promise.all([
+          supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single(),
+          supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .single()
+        ]).then(([profileResult, roleResult]) => {
+          if (!profileResult.error && profileResult.data) {
+            const role = roleResult.data?.role || 'donor';
+            setProfile({
+              ...profileResult.data,
+              role: role as 'donor' | 'recipient' | 'admin'
+            });
+          }
+          setLoading(false);
+        });
       } else {
         setLoading(false);
       }
