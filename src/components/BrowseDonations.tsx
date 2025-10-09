@@ -50,9 +50,12 @@ const BrowseDonations = ({ onNavigateToAlerts }: BrowseDonationsProps) => {
 
   const fetchDonations = async () => {
     try {
-      // Use the secure function to get public donations without contact info
+      // Query food_donations directly - RLS policies handle access control
       const { data: donationsData, error: donationsError } = await supabase
-        .rpc('get_public_donations');
+        .from('food_donations')
+        .select('*')
+        .eq('status', 'available')
+        .order('created_at', { ascending: false });
 
       if (donationsError) {
         toast({

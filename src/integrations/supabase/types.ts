@@ -51,13 +51,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "donation_claims_donation_id_fkey"
-            columns: ["donation_id"]
-            isOneToOne: false
-            referencedRelation: "public_donations"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "donation_claims_recipient_id_fkey"
             columns: ["recipient_id"]
             isOneToOne: false
@@ -247,59 +240,7 @@ export type Database = {
       }
     }
     Views: {
-      public_donations: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          donor_id: string | null
-          expiry_time: string | null
-          food_type: Database["public"]["Enums"]["food_category"] | null
-          id: string | null
-          pickup_location: string | null
-          quantity: string | null
-          special_instructions: string | null
-          status: Database["public"]["Enums"]["donation_status"] | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          donor_id?: string | null
-          expiry_time?: string | null
-          food_type?: Database["public"]["Enums"]["food_category"] | null
-          id?: string | null
-          pickup_location?: string | null
-          quantity?: string | null
-          special_instructions?: string | null
-          status?: Database["public"]["Enums"]["donation_status"] | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          donor_id?: string | null
-          expiry_time?: string | null
-          food_type?: Database["public"]["Enums"]["food_category"] | null
-          id?: string | null
-          pickup_location?: string | null
-          quantity?: string | null
-          special_instructions?: string | null
-          status?: Database["public"]["Enums"]["donation_status"] | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "food_donations_donor_id_fkey"
-            columns: ["donor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       admin_update_user_role: {
@@ -321,49 +262,7 @@ export type Database = {
           donor_organization: string
         }[]
       }
-      get_public_donation_info: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          created_at: string
-          description: string
-          donor_id: string
-          expiry_time: string
-          food_type: Database["public"]["Enums"]["food_category"]
-          id: string
-          pickup_location: string
-          quantity: string
-          special_instructions: string
-          status: Database["public"]["Enums"]["donation_status"]
-          title: string
-          updated_at: string
-        }[]
-      }
-      get_public_donations: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          created_at: string
-          description: string
-          donor_id: string
-          expiry_time: string
-          food_type: Database["public"]["Enums"]["food_category"]
-          id: string
-          pickup_location: string
-          quantity: string
-          special_instructions: string
-          status: Database["public"]["Enums"]["donation_status"]
-          title: string
-          updated_at: string
-        }[]
-      }
       get_public_profile_info: {
-        Args: { profile_user_id: string }
-        Returns: {
-          organization_name: string
-          role: Database["public"]["Enums"]["user_role"]
-          user_id: string
-        }[]
-      }
-      get_public_profile_info_secure: {
         Args: { profile_user_id: string }
         Returns: {
           organization_name: string
