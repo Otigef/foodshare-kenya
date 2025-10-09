@@ -48,7 +48,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { donationId, recipientName, message }: NotificationRequest = await req.json();
     
-    console.log('Processing email notification for donation:', donationId);
+    console.log('Processing email notification request');
 
     // Verify user owns this claim
     const { data: claim, error: claimError } = await supabaseClient
@@ -83,7 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (donationError || !donation) {
-      console.error('Error fetching donation - donation not found');
+      console.error('Donation not found');
       throw new Error('Donation not found');
     }
 
@@ -91,7 +91,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user: donorUser }, error: userError } = await supabase.auth.admin.getUserById(donation.donor_id);
 
     if (userError || !donorUser?.email) {
-      console.error('Error fetching donor email - user not found');
+      console.error('Donor information not available');
       throw new Error('Donor email not found');
     }
 

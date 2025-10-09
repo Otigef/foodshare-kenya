@@ -47,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { donationId, recipientName, message }: NotificationRequest = await req.json();
 
-    console.log('Processing WhatsApp notification for donation:', donationId);
+    console.log('Processing WhatsApp notification request');
 
     // Verify user owns this claim
     const { data: claim, error: claimError } = await supabaseClient
@@ -84,13 +84,13 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (donationError || !donation) {
-      console.error('Error fetching donation - donation not found');
+      console.error('Donation not found');
       throw new Error('Donation not found');
     }
 
     const donorPhone = donation.contact_phone;
     if (!donorPhone) {
-      console.log('No phone number provided for donor, skipping WhatsApp notification');
+      console.log('No contact phone available, skipping WhatsApp notification');
       return new Response(JSON.stringify({ 
         success: true, 
         message: 'Notification skipped - no phone number' 
@@ -153,7 +153,7 @@ _FoodShare Kenya Platform_`;
     const whatsappResult = await whatsappResponse.json();
     
     if (!whatsappResponse.ok) {
-      console.error('WhatsApp API error response received');
+      console.error('WhatsApp API error:', whatsappResult);
       throw new Error('Failed to send WhatsApp notification');
     }
 

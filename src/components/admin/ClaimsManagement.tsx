@@ -86,7 +86,7 @@ const ClaimsManagement = () => {
             });
           }
         } catch (emailError) {
-          console.error('Error sending email notification:', emailError);
+          console.error('Notification service error');
           // Don't fail the status update if email fails
         }
       }
