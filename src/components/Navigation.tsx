@@ -30,12 +30,15 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
       { id: 'impact', label: 'Our Impact' }
     ];
     
-    // Only show admin section to admin users
-    if (isAdmin) {
-      baseItems.push({ id: 'admin', label: 'Admin' });
-    }
-    
     return baseItems;
+  };
+  
+  const handleNavClick = (itemId: string) => {
+    if (itemId === 'admin') {
+      navigate('/admin');
+    } else {
+      onViewChange(itemId);
+    }
   };
 
   const navItems = getNavItems();
@@ -64,12 +67,21 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
               <Button
                 key={item.id}
                 variant={currentView === item.id ? "default" : "ghost"}
-                onClick={() => onViewChange(item.id)}
+                onClick={() => handleNavClick(item.id)}
                 className="font-medium"
               >
                 {item.label}
               </Button>
             ))}
+            {isAdmin && (
+              <Button
+                variant={currentView === 'admin' ? "default" : "ghost"}
+                onClick={() => navigate('/admin')}
+                className="font-medium"
+              >
+                Admin
+              </Button>
+            )}
           </div>
 
           {/* Desktop CTA */}
@@ -116,7 +128,7 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
                     key={item.id}
                     variant={currentView === item.id ? "default" : "ghost"}
                     onClick={() => {
-                      onViewChange(item.id);
+                      handleNavClick(item.id);
                       setIsOpen(false);
                     }}
                     className="justify-start font-medium"
@@ -125,6 +137,20 @@ const Navigation = ({ currentView, onViewChange }: NavigationProps) => {
                     {item.label}
                   </Button>
                 ))}
+                
+                {isAdmin && (
+                  <Button
+                    variant={currentView === 'admin' ? "default" : "ghost"}
+                    onClick={() => {
+                      navigate('/admin');
+                      setIsOpen(false);
+                    }}
+                    className="justify-start font-medium"
+                    size="lg"
+                  >
+                    Admin
+                  </Button>
+                )}
                 
                 <div className="pt-4 space-y-3">
                   {user ? (
