@@ -195,19 +195,5 @@ Navigate to Project → Settings → Domains in Lovable to connect your custom d
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Support
-
-- Documentation: [Lovable Docs](https://docs.lovable.dev/)
-- Community: [Discord Server](https://discord.com/channels/1119885301872070706/1280461670979993613)
-- Issues: [GitHub Issues](https://github.com/your-username/foodshare-kenya/issues)
-
-## 🙏 Acknowledgments
-
-- Built with [Lovable](https://lovable.dev) - AI-powered web development
-- UI components from [shadcn/ui](https://ui.shadcn.com/)
-- Icons by [Lucide](https://lucide.dev/)
-- Backend powered by [Supabase](https://supabase.com/)
-
----
 
 **Making a difference, one meal at a time** 🌟
