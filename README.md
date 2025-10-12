@@ -142,12 +142,6 @@ npm run dev
 ```bash
 npm run build
 npm run preview
-```
-
-### Deploy to Lovable
-1. Open your [Lovable Project](https://lovable.dev/projects/d0811739-14e5-456e-98b9-7433934e2903)
-2. Click "Share" → "Publish"
-3. Your app will be live at `https://foodshare-kenya.lovable.app`
 
 ### Custom Domain
 Navigate to Project → Settings → Domains in Lovable to connect your custom domain.
