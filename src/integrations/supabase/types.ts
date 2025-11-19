@@ -251,7 +251,7 @@ export type Database = {
         Returns: Json
       }
       get_current_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_donor_contact_for_claim: {

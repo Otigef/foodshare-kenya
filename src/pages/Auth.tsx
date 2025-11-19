@@ -161,7 +161,15 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      // Validate email format
+      const resetEmailSchema = z.string()
+        .trim()
+        .email({ message: "Please enter a valid email address" })
+        .max(255, { message: "Email must be less than 255 characters" });
+
+      const validatedEmail = resetEmailSchema.parse(resetEmail);
+
+      const { error } = await supabase.auth.resetPasswordForEmail(validatedEmail, {
         redirectTo: `${window.location.origin}/auth`,
       });
 
@@ -180,11 +188,19 @@ const Auth = () => {
         setResetEmail('');
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Invalid Email",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
