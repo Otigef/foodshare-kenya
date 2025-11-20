@@ -16,8 +16,28 @@ const AdminDashboard = () => {
     totalClaims: 0,
     pendingClaims: 0
   });
+  const [adminName, setAdminName] = useState<string>('Admin');
 
   useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (profile?.full_name) {
+            setAdminName(profile.full_name);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching admin profile:', error);
+      }
+    };
+
     const fetchStats = async () => {
       try {
         // Fetch total users
@@ -53,79 +73,70 @@ const AdminDashboard = () => {
       }
     };
 
+    fetchAdminProfile();
     fetchStats();
   }, []);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
 
   return (
     <div className="min-h-screen bg-background py-16">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
+        <div className="mb-8">
           <Badge variant="secondary" className="mb-4">
             <Shield className="h-4 w-4 mr-2" />
             Admin Dashboard
           </Badge>
-          <h1 className="text-4xl font-bold text-foreground mb-4">
-            Platform Management
+          <h1 className="text-4xl font-bold text-foreground mb-2">
+            {getGreeting()}, {adminName}!
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Monitor platform activity, manage user accounts, and ensure safe food sharing operations
+          <p className="text-lg text-muted-foreground">
+            Here's what's happening with FoodShare Kenya today
           </p>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-              <p className="text-xs text-muted-foreground">
-                Registered platform users
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Donations</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.activeDonations}</div>
-              <p className="text-xs text-muted-foreground">
-                Available for claiming
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Claims</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalClaims}</div>
-              <p className="text-xs text-muted-foreground">
-                All time claims
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Claims</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pendingClaims}</div>
-              <p className="text-xs text-muted-foreground">
-                Requiring attention
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Quick Stats Summary */}
+        <Card className="mb-8 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Quick Overview
+            </CardTitle>
+            <CardDescription>Real-time platform metrics at a glance</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-foreground">{stats.totalUsers}</div>
+                <div className="text-sm text-muted-foreground mt-1">Total Users</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-foreground">{stats.activeDonations}</div>
+                <div className="text-sm text-muted-foreground mt-1">Active Donations</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-foreground">{stats.totalClaims}</div>
+                <div className="text-sm text-muted-foreground mt-1">Total Claims</div>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2">
+                  {stats.pendingClaims > 0 ? (
+                    <AlertTriangle className="h-5 w-5 text-warning" />
+                  ) : (
+                    <CheckCircle className="h-5 w-5 text-success" />
+                  )}
+                  <div className="text-3xl font-bold text-foreground">{stats.pendingClaims}</div>
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">Pending Claims</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Management Tabs */}
         <Tabs defaultValue="users" className="w-full">
