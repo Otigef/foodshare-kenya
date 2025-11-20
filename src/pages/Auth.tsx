@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, Building } from "lucide-react";
+import { Mail, Lock, User, Building, Shield, Loader2 } from "lucide-react";
 import { signInSchema, signUpSchema } from "@/lib/authValidation";
 import { z } from 'zod';
 
@@ -216,9 +216,10 @@ const Auth = () => {
 
         <Card className="p-6 shadow-card">
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="admin">Admin</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin" className="space-y-4">
@@ -387,6 +388,71 @@ const Auth = () => {
                   {loading ? "Creating Account..." : "Create Account"}
                 </Button>
               </form>
+            </TabsContent>
+
+            <TabsContent value="admin">
+              <div className="space-y-4">
+                <div className="bg-muted/50 border border-border rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Shield className="h-4 w-4" />
+                    <span>Administrator Access Only</span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSignIn}>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="admin-email"
+                          type="email"
+                          placeholder="admin@example.com"
+                          className="pl-10"
+                          value={signInData.email}
+                          onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-password">Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="admin-password"
+                          type="password"
+                          placeholder="••••••••"
+                          className="pl-10"
+                          value={signInData.password}
+                          onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Signing in...
+                        </>
+                      ) : (
+                        <>
+                          <Shield className="mr-2 h-4 w-4" />
+                          Sign In as Admin
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </div>
             </TabsContent>
           </Tabs>
         </Card>
