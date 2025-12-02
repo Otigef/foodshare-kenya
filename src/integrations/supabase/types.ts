@@ -283,7 +283,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "donor" | "recipient"
+      app_role: "admin" | "donor" | "recipient" | "superadmin"
       donation_status: "available" | "claimed" | "completed" | "expired"
       food_category:
         | "fruits"
@@ -294,7 +294,7 @@ export type Database = {
         | "prepared"
         | "baked"
         | "other"
-      user_role: "donor" | "recipient" | "admin"
+      user_role: "donor" | "recipient" | "admin" | "superadmin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -422,7 +422,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "donor", "recipient"],
+      app_role: ["admin", "donor", "recipient", "superadmin"],
       donation_status: ["available", "claimed", "completed", "expired"],
       food_category: [
         "fruits",
@@ -434,7 +434,7 @@ export const Constants = {
         "baked",
         "other",
       ],
-      user_role: ["donor", "recipient", "admin"],
+      user_role: ["donor", "recipient", "admin", "superadmin"],
     },
   },
 } as const
