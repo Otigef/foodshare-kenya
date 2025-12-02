@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface UserProfile {
   user_id: string;
   full_name: string;
-  role: 'donor' | 'recipient' | 'admin';
+  role: 'donor' | 'recipient' | 'admin' | 'superadmin';
   organization_name?: string;
   phone?: string;
   location?: string;
@@ -17,6 +17,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   isAdmin: boolean;
+  isSuperadmin: boolean;
   isDonor: boolean;
   isRecipient: boolean;
 }
@@ -117,7 +118,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     profile,
     loading,
-    isAdmin: profile?.role === 'admin',
+    isAdmin: profile?.role === 'admin' || profile?.role === 'superadmin',
+    isSuperadmin: profile?.role === 'superadmin',
     isDonor: profile?.role === 'donor',
     isRecipient: profile?.role === 'recipient',
   };

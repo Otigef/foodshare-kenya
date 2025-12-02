@@ -250,6 +250,20 @@ export type Database = {
         }
         Returns: Json
       }
+      count_admins: { Args: never; Returns: number }
+      get_admin_stats: { Args: never; Returns: Json }
+      get_all_users_for_admin_management: {
+        Args: never
+        Returns: {
+          created_at: string
+          full_name: string
+          location: string
+          organization_name: string
+          phone: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
       get_current_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
@@ -280,6 +294,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      is_superadmin: { Args: { _user_id: string }; Returns: boolean }
+      promote_to_admin: { Args: { target_user_id: string }; Returns: Json }
+      remove_admin: {
+        Args: {
+          new_role?: Database["public"]["Enums"]["app_role"]
+          target_user_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {
