@@ -3,13 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Activity, BarChart3, Shield, AlertTriangle, CheckCircle } from "lucide-react";
+import { Users, Activity, BarChart3, Shield, AlertTriangle, CheckCircle, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import UserManagement from "./admin/UserManagement";
 import DonationsManagement from "./admin/DonationsManagement";
 import ClaimsManagement from "./admin/ClaimsManagement";
+import AdminManagementPanel from "./admin/AdminManagementPanel";
 
 const AdminDashboard = () => {
+  const { isSuperadmin } = useAuth();
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeDonations: 0,
@@ -140,7 +143,7 @@ const AdminDashboard = () => {
 
         {/* Management Tabs */}
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${isSuperadmin ? 'grid-cols-5' : 'grid-cols-4'}`}>
             <TabsTrigger value="users" className="flex items-center">
               <Users className="h-4 w-4 mr-2" />
               Users
@@ -157,6 +160,12 @@ const AdminDashboard = () => {
               <BarChart3 className="h-4 w-4 mr-2" />
               Analytics
             </TabsTrigger>
+            {isSuperadmin && (
+              <TabsTrigger value="admin-management" className="flex items-center">
+                <Crown className="h-4 w-4 mr-2" />
+                Admins
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="users" className="mt-6">
@@ -229,6 +238,12 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {isSuperadmin && (
+            <TabsContent value="admin-management" className="mt-6">
+              <AdminManagementPanel />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
