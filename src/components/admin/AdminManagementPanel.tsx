@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Shield, ShieldCheck, ShieldAlert, UserPlus, UserMinus, Crown, Users } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldAlert, UserPlus, UserMinus, Crown, Users, History, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface ManagedUser {
@@ -26,17 +27,30 @@ interface AdminStats {
   is_superadmin: boolean;
 }
 
+interface AuditLogEntry {
+  id: string;
+  admin_id: string;
+  target_user_id: string;
+  old_role: string | null;
+  new_role: string;
+  created_at: string;
+  admin_name?: string;
+  target_name?: string;
+}
+
 export default function AdminManagementPanel() {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
   const [processingUser, setProcessingUser] = useState<string | null>(null);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const { toast } = useToast();
   const { isSuperadmin } = useAuth();
 
   useEffect(() => {
     if (isSuperadmin) {
       fetchData();
+      fetchAuditLogs();
     }
   }, [isSuperadmin]);
 
@@ -64,6 +78,45 @@ export default function AdminManagementPanel() {
     }
   };
 
+  const fetchAuditLogs = async () => {
+    try {
+      const { data: logs, error } = await supabase
+        .from('role_changes_audit')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      // Get user names for the logs
+      if (logs && logs.length > 0) {
+        const userIds = [...new Set([
+          ...logs.map(l => l.admin_id),
+          ...logs.map(l => l.target_user_id)
+        ])];
+
+        const { data: profiles } = await supabase
+          .rpc('get_all_users_for_admin_management');
+
+        const profileMap = new Map(
+          (profiles || []).map(p => [p.user_id, p.full_name])
+        );
+
+        const enrichedLogs = logs.map(log => ({
+          ...log,
+          admin_name: profileMap.get(log.admin_id) || 'Unknown',
+          target_name: profileMap.get(log.target_user_id) || 'Unknown'
+        }));
+
+        setAuditLogs(enrichedLogs);
+      } else {
+        setAuditLogs([]);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch audit logs:', error);
+    }
+  };
+
   const handlePromoteToAdmin = async (userId: string, userName: string) => {
     if (!adminStats || adminStats.admin_count >= adminStats.max_admins) {
       toast({
@@ -88,6 +141,7 @@ export default function AdminManagementPanel() {
       });
 
       fetchData();
+      fetchAuditLogs();
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -115,6 +169,7 @@ export default function AdminManagementPanel() {
       });
 
       fetchData();
+      fetchAuditLogs();
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -313,6 +368,63 @@ export default function AdminManagementPanel() {
                 ))}
               </TableBody>
             </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Audit Log */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" />
+            Role Changes Audit Log
+          </CardTitle>
+          <CardDescription>
+            History of all role changes with timestamps
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {auditLogs.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">No role changes recorded yet</p>
+          ) : (
+            <ScrollArea className="h-[300px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Changed By</TableHead>
+                    <TableHead>Target User</TableHead>
+                    <TableHead>Role Change</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {auditLogs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-sm">
+                        {format(new Date(log.created_at), 'MMM d, yyyy HH:mm')}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">{log.admin_name}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">{log.target_name}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {log.old_role || 'none'}
+                          </Badge>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                          <Badge variant="default" className="text-xs">
+                            {log.new_role}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
           )}
         </CardContent>
       </Card>
