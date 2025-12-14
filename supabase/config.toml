@@ -1,1 +1,10 @@
 project_id = "phieoysupudriswzrcrr"
+
+[functions.notify-donor]
+verify_jwt = false
+
+[functions.notify-donor-email]
+verify_jwt = false
+
+[functions.notify-role-change]
+verify_jwt = true
