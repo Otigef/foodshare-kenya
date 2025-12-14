@@ -117,6 +117,24 @@ export default function AdminManagementPanel() {
     }
   };
 
+  const sendRoleChangeNotification = async (
+    targetUserId: string,
+    oldRole: string | null,
+    newRole: string,
+    action: "promoted" | "demoted"
+  ) => {
+    try {
+      const { error } = await supabase.functions.invoke('notify-role-change', {
+        body: { targetUserId, oldRole, newRole, action }
+      });
+      if (error) {
+        console.error('Failed to send notification email:', error);
+      }
+    } catch (err) {
+      console.error('Error sending notification:', err);
+    }
+  };
+
   const handlePromoteToAdmin = async (userId: string, userName: string) => {
     if (!adminStats || adminStats.admin_count >= adminStats.max_admins) {
       toast({
@@ -127,6 +145,9 @@ export default function AdminManagementPanel() {
       return;
     }
 
+    const currentUser = users.find(u => u.user_id === userId);
+    const oldRole = currentUser?.role || null;
+
     setProcessingUser(userId);
     try {
       const { data, error } = await supabase.rpc('promote_to_admin', {
@@ -135,9 +156,12 @@ export default function AdminManagementPanel() {
 
       if (error) throw error;
 
+      // Send email notification
+      sendRoleChangeNotification(userId, oldRole, 'admin', 'promoted');
+
       toast({
         title: 'Success',
-        description: `${userName} has been promoted to admin`,
+        description: `${userName} has been promoted to admin. A notification email has been sent.`,
       });
 
       fetchData();
@@ -163,9 +187,12 @@ export default function AdminManagementPanel() {
 
       if (error) throw error;
 
+      // Send email notification
+      sendRoleChangeNotification(userId, 'admin', newRole, 'demoted');
+
       toast({
         title: 'Success',
-        description: `${userName} has been demoted to ${newRole}`,
+        description: `${userName} has been demoted to ${newRole}. A notification email has been sent.`,
       });
 
       fetchData();
