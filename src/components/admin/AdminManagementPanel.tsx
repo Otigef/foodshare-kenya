@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Shield, ShieldCheck, ShieldAlert, UserPlus, UserMinus, Crown, Users, History, ArrowRight } from 'lucide-react';
-import { format } from 'date-fns';
+import { Shield, ShieldCheck, ShieldAlert, UserPlus, UserMinus, Crown, Users, History, ArrowRight, CalendarIcon, Filter, X } from 'lucide-react';
+import { format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ManagedUser {
   user_id: string;
@@ -44,6 +47,13 @@ export default function AdminManagementPanel() {
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
   const [processingUser, setProcessingUser] = useState<string | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  
+  // Audit log filters
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
+  const [adminFilter, setAdminFilter] = useState<string>('all');
+  const [actionFilter, setActionFilter] = useState<string>('all');
+  
   const { toast } = useToast();
   const { isSuperadmin } = useAuth();
 
@@ -116,6 +126,57 @@ export default function AdminManagementPanel() {
       console.error('Failed to fetch audit logs:', error);
     }
   };
+
+  // Get unique admins from logs for filter dropdown
+  const uniqueAdmins = useMemo(() => {
+    const admins = new Map<string, string>();
+    auditLogs.forEach(log => {
+      if (!admins.has(log.admin_id)) {
+        admins.set(log.admin_id, log.admin_name || 'Unknown');
+      }
+    });
+    return Array.from(admins.entries()).map(([id, name]) => ({ id, name }));
+  }, [auditLogs]);
+
+  // Filter audit logs based on selected filters
+  const filteredAuditLogs = useMemo(() => {
+    return auditLogs.filter(log => {
+      // Date from filter
+      if (dateFrom) {
+        const logDate = new Date(log.created_at);
+        if (isBefore(logDate, startOfDay(dateFrom))) return false;
+      }
+      
+      // Date to filter
+      if (dateTo) {
+        const logDate = new Date(log.created_at);
+        if (isAfter(logDate, endOfDay(dateTo))) return false;
+      }
+      
+      // Admin filter
+      if (adminFilter !== 'all' && log.admin_id !== adminFilter) return false;
+      
+      // Action type filter
+      if (actionFilter !== 'all') {
+        const isPromotion = log.new_role === 'admin';
+        const isDemotion = log.old_role === 'admin' && log.new_role !== 'admin';
+        
+        if (actionFilter === 'promotion' && !isPromotion) return false;
+        if (actionFilter === 'demotion' && !isDemotion) return false;
+      }
+      
+      return true;
+    });
+  }, [auditLogs, dateFrom, dateTo, adminFilter, actionFilter]);
+
+  const clearFilters = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setAdminFilter('all');
+    setActionFilter('all');
+  };
+
+  const hasActiveFilters = dateFrom || dateTo || adminFilter !== 'all' || actionFilter !== 'all';
 
   const sendRoleChangeNotification = async (
     targetUserId: string,
@@ -402,17 +463,117 @@ export default function AdminManagementPanel() {
       {/* Audit Log */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5 text-primary" />
-            Role Changes Audit Log
-          </CardTitle>
-          <CardDescription>
-            History of all role changes with timestamps
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5 text-primary" />
+                Role Changes Audit Log
+              </CardTitle>
+              <CardDescription>
+                History of all role changes with timestamps
+              </CardDescription>
+            </div>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                <X className="h-4 w-4 mr-1" />
+                Clear filters
+              </Button>
+            )}
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-3 p-3 bg-muted/50 rounded-lg">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            
+            {/* Date From */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "justify-start text-left font-normal",
+                    !dateFrom && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateFrom ? format(dateFrom, "MMM d, yyyy") : "From date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateFrom}
+                  onSelect={setDateFrom}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Date To */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "justify-start text-left font-normal",
+                    !dateTo && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateTo ? format(dateTo, "MMM d, yyyy") : "To date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateTo}
+                  onSelect={setDateTo}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+
+            {/* Admin Filter */}
+            <Select value={adminFilter} onValueChange={setAdminFilter}>
+              <SelectTrigger className="w-[160px] h-9">
+                <SelectValue placeholder="Changed by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All admins</SelectItem>
+                {uniqueAdmins.map(admin => (
+                  <SelectItem key={admin.id} value={admin.id}>{admin.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Action Type Filter */}
+            <Select value={actionFilter} onValueChange={setActionFilter}>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="Action type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All actions</SelectItem>
+                <SelectItem value="promotion">Promotions</SelectItem>
+                <SelectItem value="demotion">Demotions</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {hasActiveFilters && (
+              <Badge variant="secondary" className="ml-auto">
+                {filteredAuditLogs.length} of {auditLogs.length} entries
+              </Badge>
+            )}
+          </div>
+
           {auditLogs.length === 0 ? (
             <p className="text-muted-foreground text-center py-4">No role changes recorded yet</p>
+          ) : filteredAuditLogs.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">No entries match your filters</p>
           ) : (
             <ScrollArea className="h-[300px]">
               <Table>
@@ -425,7 +586,7 @@ export default function AdminManagementPanel() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {auditLogs.map((log) => (
+                  {filteredAuditLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="text-sm">
                         {format(new Date(log.created_at), 'MMM d, yyyy HH:mm')}
